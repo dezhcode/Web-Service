@@ -1,6 +1,8 @@
 # ai EasySaz API
 
-وب‌سرویس هوش مصنوعی ai EasySaz که از طریق API در دسترس است. راهنمای کامل استفادهٔ کاربران (پایتون): [docs/index.md](docs/index.md).
+وب‌سرویس هوش مصنوعی ai EasySaz که از طریق API در دسترس است.
+
+**راهنمای آنلاین:** بعد از استقرار، آدرس `https://دامنه/doc` را باز کنید. این صفحه راهنمای کامل فارسی (کلید، مسیرها، نمونه‌کد curl / Python / JavaScript / PHP، تصویر، خطاها) را نشان می‌دهد و فرمی دارد که کاربر با کلید خودش از همان‌جا درخواست واقعی بفرستد (یک‌جا، استریم یا WebSocket) و جواب را ببیند. باز کردن آدرس اصلی سایت در مرورگر هم به `/doc` می‌رود. فایل صفحه: [web/doc.html](web/doc.html). نسخهٔ متنی راهنما: [docs/index.md](docs/index.md).
 
 | روش | مسیر | توضیح |
 |---|---|---|
@@ -8,6 +10,9 @@
 | SSE | `POST /api/chat/stream` | استریم روی HTTP معمولی؛ روی Passenger کار می‌کند |
 | JSON | `POST /api/chat` | یک درخواست، یک پاسخ کامل |
 | — | `GET /health` | بدون احراز هویت |
+| — | `GET /doc` | راهنمای کاربر + ارسال درخواست آزمایشی از مرورگر (بدون احراز هویت؛ کلید را کاربر در صفحه وارد می‌کند) |
+| — | `GET /openapi.json` | مشخصات OpenAPI 3.1 برای Postman / Swagger |
+| — | `GET /` | اطلاعات سرویس و محدودیت‌ها به‌صورت JSON؛ مرورگر به `/doc` هدایت می‌شود |
 
 ## تکنولوژی و چرا
 
@@ -54,7 +59,7 @@ python setup_and_test.py
    - `API_KEY` = یک رشتهٔ تصادفی طولانی (**اجباری**؛ بدون آن سرویس 503 می‌دهد)
 4. در ترمینال/کادر «Configuration files» → `requirements.txt` را اضافه و **Run Pip Install** بزنید.
 5. **Restart** کنید (یا `touch tmp/restart.txt`).
-6. تست: `curl https://YOUR-DOMAIN/health`
+6. تست: `curl https://YOUR-DOMAIN/health` و در مرورگر `https://YOUR-DOMAIN/doc`
 
 ## اجرا روی VPS / لوکال (با WebSocket)
 
@@ -102,7 +107,8 @@ ws.onopen = () => ws.send(JSON.stringify({ type: "chat", id: "1", prompt: "سل�
 | `MAX_CONCURRENCY` | `3` | حداکثر درخواست همزمان به موتور هوش مصنوعی (هاست اشتراکی منابع کمی دارد) |
 | `MAX_PROMPT_CHARS` | `8000` | |
 | `MAX_IMAGE_BYTES` | `10485760` | |
-| `CORS_ORIGINS` | خالی | لیست origin ها با کاما، برای فراخوانی از مرورگر |
+| `CORS_ORIGINS` | خالی | لیست origin ها با کاما، برای فراخوانی از مرورگر (صفحهٔ `/doc` روی همان دامنه است و به این نیاز ندارد) |
+| `WEBSOCKET_ENABLED` | `1` | `passenger_wsgi.py` خودش آن را `0` می‌کند تا `/doc` بگوید WebSocket در دسترس نیست |
 
 ## تست
 

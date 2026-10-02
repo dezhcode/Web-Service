@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ai EasySaz API</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6fed'/%3E%3Ctext x='16' y='22' font-size='16' font-family='Arial' font-weight='700' fill='white' text-anchor='middle'%3Eai%3C/text%3E%3C/svg%3E">
+<meta name="description" content="راهنمای کامل وب‌سرویس هوش مصنوعی ai EasySaz و ارسال درخواست آزمایشی از داخل مرورگر">
+<style>
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --border: #dde1e7;
+  --text: #1c2330;
+  --muted: #5d6879;
+  --accent: #2f6fed;
+  --accent-text: #ffffff;
+  --accent-soft: #e7eefd;
+  --ok: #1d8a4e;
+  --warn: #b26a00;
+  --err: #c62f3a;
+  --code-bg: #10151f;
+  --code-text: #e3e8f0;
+  --radius: 10px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: Vazirmatn, "Vazir", "IRANSans", Tahoma, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1218; --surface: #151b24; --surface-2: #1c2430; --border: #2a3442;
+    --text: #e5e9f0; --muted: #98a3b3; --accent: #6b9cff; --accent-text: #0b1020;
+    --accent-soft: #1d2a44; --ok: #45c07a; --warn: #e3a440; --err: #ff6b76;
+    --code-bg: #0a0e14; --code-text: #e3e8f0;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1218; --surface: #151b24; --surface-2: #1c2430; --border: #2a3442;
+  --text: #e5e9f0; --muted: #98a3b3; --accent: #6b9cff; --accent-text: #0b1020;
+  --accent-soft: #1d2a44; --ok: #45c07a; --warn: #e3a440; --err: #ff6b76;
+  --code-bg: #0a0e14; --code-text: #e3e8f0;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.85 var(--sans); -webkit-text-size-adjust: 100%;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: var(--mono); font-size: .88em; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; direction: ltr; unicode-bidi: embed; }
+h1, h2, h3 { line-height: 1.4; }
+h2 { font-size: 1.45rem; margin: 0 0 .6rem; }
+h3 { font-size: 1.08rem; margin: 1.6rem 0 .5rem; }
+p { margin: .5rem 0 .9rem; }
+
+/* ── header ── */
+header.top {
+  position: sticky; top: 0; z-index: 20; height: 60px;
+  display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.brand { font-weight: 700; font-size: 1.05rem; white-space: nowrap; color: var(--text); }
+.brand span { color: var(--accent); }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 99px; padding: 2px 10px; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ok { background: var(--ok); } .dot.err { background: var(--err); }
+.spacer { flex: 1; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font: inherit; font-size: .9rem; cursor: pointer; border-radius: 8px; padding: 6px 14px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+}
+.btn:hover { background: var(--surface-2); text-decoration: none; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.icon-btn { padding: 6px 10px; }
+#menuBtn { display: none; }
+
+/* ── layout ── */
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1240px; margin: 0 auto; }
+nav.side {
+  position: sticky; top: 60px; align-self: start; height: calc(100vh - 60px); overflow-y: auto;
+  padding: 20px 16px; border-left: 1px solid var(--border);
+}
+nav.side a { display: block; color: var(--muted); padding: 4px 10px; border-radius: 6px; font-size: .92rem; }
+nav.side a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+nav.side a.active { color: var(--accent); background: var(--accent-soft); }
+nav.side .group { font-size: .75rem; color: var(--muted); margin: 14px 10px 4px; font-weight: 700; letter-spacing: .02em; }
+nav.side a.sub { padding-right: 22px; font-size: .88rem; }
+main { padding: 28px 32px 80px; min-width: 0; }
+section { margin-bottom: 48px; }
+.hero h1 { font-size: 1.9rem; margin: 0 0 .3rem; }
+.hero p { color: var(--muted); font-size: 1.02rem; max-width: 760px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+.grid3 .card h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.grid3 .card p { margin: 0; color: var(--muted); font-size: .9rem; }
+.base-box { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.base-box code { font-size: .95rem; padding: 4px 10px; }
+
+.endpoint { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: .4rem 0 .8rem; }
+.method { font-family: var(--mono); font-size: .78rem; font-weight: 700; border-radius: 5px; padding: 2px 8px; color: #fff; }
+.m-post { background: #1d8a4e; } .m-get { background: #2f6fed; } .m-ws { background: #8a3fd1; }
+.endpoint .path { font-family: var(--mono); direction: ltr; font-size: .95rem; }
+.badge { font-size: .75rem; border: 1px solid var(--border); border-radius: 99px; padding: 0 8px; color: var(--muted); }
+
+table { width: 100%; border-collapse: collapse; margin: .6rem 0 1rem; font-size: .9rem; display: block; overflow-x: auto; }
+th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+
+.callout { border-right: 4px solid var(--accent); background: var(--accent-soft); padding: 10px 14px; border-radius: 6px; margin: 1rem 0; }
+.callout.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+
+/* ── code blocks ── */
+.code { position: relative; margin: .6rem 0 1rem; }
+pre {
+  margin: 0; direction: ltr; text-align: left; background: var(--code-bg); color: var(--code-text);
+  padding: 14px 16px; border-radius: var(--radius); overflow-x: auto; font: 13px/1.6 var(--mono);
+}
+pre code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+.copy { position: absolute; top: 8px; right: 8px; font-size: .75rem; padding: 2px 10px;
+  background: rgba(255,255,255,.08); color: #cfd6e2; border: 1px solid rgba(255,255,255,.15); border-radius: 6px; cursor: pointer; }
+.copy:hover { background: rgba(255,255,255,.16); }
+.tabs { margin: .6rem 0 1rem; }
+.tablist { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 8px; flex-wrap: wrap; }
+.tablist button { font: inherit; font-size: .85rem; border: 0; background: none; color: var(--muted); padding: 6px 12px; cursor: pointer; border-bottom: 2px solid transparent; }
+.tablist button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tabpanel[hidden] { display: none; }
+.tabpanel .code { margin-top: 0; }
+
+/* ── playground ── */
+.pg { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.field { margin-bottom: 14px; }
+.field label, .field .label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; }
+.hint { font-size: .78rem; color: var(--muted); }
+input[type=text], input[type=password], input[type=url], textarea, select {
+  width: 100%; font: inherit; color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+}
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+input.ltr { direction: ltr; text-align: left; font-family: var(--mono); font-size: .88rem; }
+textarea { min-height: 120px; resize: vertical; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row > input { flex: 1; min-width: 0; }
+.seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.seg label { flex: 1; text-align: center; cursor: pointer; padding: 6px 8px; font-size: .85rem; font-weight: 500;
+  margin: 0; border-left: 1px solid var(--border); white-space: nowrap; }
+.seg label:last-child { border-left: 0; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.check { display: flex; align-items: center; gap: 6px; font-size: .85rem; font-weight: 400; margin-top: 6px; }
+.resp-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; min-height: 30px; }
+.pill { font-family: var(--mono); font-size: .8rem; border-radius: 99px; padding: 1px 10px; border: 1px solid var(--border); color: var(--muted); }
+.pill.ok { color: var(--ok); border-color: var(--ok); } .pill.err { color: var(--err); border-color: var(--err); }
+.output {
+  min-height: 220px; max-height: 520px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: .95rem;
+}
+.output.err { color: var(--err); }
+.output .ph { color: var(--muted); }
+details { margin-top: 10px; }
+summary { cursor: pointer; font-size: .85rem; color: var(--muted); }
+details pre { margin-top: 6px; max-height: 260px; }
+.preview { max-width: 100%; max-height: 120px; border-radius: 6px; margin-top: 6px; border: 1px solid var(--border); }
+.hidden { display: none !important; }
+
+footer { color: var(--muted); font-size: .85rem; border-top: 1px solid var(--border); padding-top: 18px; }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  nav.side { display: none; position: fixed; top: 60px; right: 0; left: 0; z-index: 15; height: auto; max-height: calc(100vh - 60px);
+    background: var(--surface); border-left: 0; border-bottom: 1px solid var(--border); }
+  nav.side.open { display: block; }
+  #menuBtn { display: inline-flex; }
+  main { padding: 20px 16px 60px; }
+  .pg, .grid3 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  header.top { gap: 8px; padding: 0 10px; }
+  header.top .btn.primary { padding: 6px 10px; }
+  .status { border: 0; padding: 0; }
+  .status .txt { display: none; }
+  .hide-sm { display: none; }
+  .hero h1 { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <button class="btn icon-btn" id="menuBtn" aria-label="فهرست" aria-expanded="false">☰</button>
+  <a class="brand" href="#intro">ai <span>EasySaz</span><b class="hide-sm" style="font-weight:inherit"> API</b></a>
+  <span class="status" id="status" title="وضعیت سرویس"><span class="dot" id="statusDot"></span><span class="txt" id="statusTxt">در حال بررسی…</span></span>
+  <span class="spacer"></span>
+  <a class="btn primary" href="#playground">ارسال درخواست</a>
+  <button class="btn icon-btn" id="themeBtn" aria-label="تغییر تم روشن/تیره" title="تم روشن/تیره">◐</button>
+</header>
+
+<div class="layout">
+<nav class="side" id="side">
+  <div class="group">شروع</div>
+  <a href="#intro">معرفی</a>
+  <a href="#quickstart">شروع سریع</a>
+  <a href="#playground">ارسال درخواست (آزمایشی)</a>
+  <a href="#auth">کلید API و احراز هویت</a>
+  <div class="group">مسیرها (Endpoints)</div>
+  <a href="#chat" class="sub">POST /api/chat</a>
+  <a href="#stream" class="sub">POST /api/chat/stream</a>
+  <a href="#ws" class="sub">WebSocket /ws</a>
+  <a href="#other" class="sub">مسیرهای عمومی</a>
+  <div class="group">راهنما</div>
+  <a href="#images">ارسال تصویر</a>
+  <a href="#history">مکالمهٔ چندمرحله‌ای</a>
+  <a href="#errors">خطاها و کدهای وضعیت</a>
+  <a href="#limits">محدودیت‌ها و نکات</a>
+  <a href="#admin">برای مدیر سرویس</a>
+</nav>
+
+<main>
+
+<!-- ───────────── intro ───────────── -->
+<section id="intro" class="hero">
+  <h1>راهنمای وب‌سرویس ai EasySaz</h1>
+  <p>با این API از برنامه، سایت یا اسکریپت خودتان به هوش مصنوعی متن یا تصویر می‌فرستید و جواب می‌گیرید. هر زبانی که بتواند درخواست HTTP بفرستد (پایتون، جاوااسکریپت، PHP، curl و…) کار می‌کند. پایین همین صفحه، در بخش <a href="#playground">ارسال درخواست</a>، می‌توانید بدون نوشتن کد درخواست واقعی بفرستید.</p>
+
+  <div class="grid3">
+    <div class="card"><h3>پاسخ یک‌جا</h3><p><code>POST /api/chat</code>: سؤال را می‌فرستید و کل جواب را یک‌جا در قالب JSON می‌گیرید.</p></div>
+    <div class="card"><h3>پاسخ استریم</h3><p><code>POST /api/chat/stream</code>: جواب در حین تولید، تکه‌تکه و با SSE می‌رسد.</p></div>
+    <div class="card"><h3>تصویر</h3><p>تصویر را با لینک یا فایل (base64) کنار سؤال بفرستید تا تحلیل شود.</p></div>
+  </div>
+
+  <div class="card">
+    <strong>آدرس پایهٔ سرویس (Base URL)</strong>
+    <div class="base-box"><code dir="ltr" id="baseUrl">…</code><button class="btn" data-copy-target="baseUrl">کپی</button></div>
+    <p class="hint" style="margin:.5rem 0 0">همهٔ مسیرهای این راهنما به این آدرس اضافه می‌شوند. مشخصات ماشینی API (OpenAPI) برای Postman و ابزارهای مشابه: <a href="openapi.json" id="openapiLink">openapi.json</a></p>
+  </div>
+</section>
+
+<!-- ───────────── quick start ───────────── -->
+<section id="quickstart">
+  <h2>شروع سریع</h2>
+  <p><strong>۱.</strong> از مدیر سرویس یک کلید API بگیرید (<a href="#auth">جزئیات</a>).</p>
+  <p><strong>۲.</strong> اولین درخواست را بفرستید:</p>
+  <div class="tabs" data-tabs>
+    <div class="tablist" role="tablist">
+      <button role="tab">curl</button><button role="tab">Python</button><button role="tab">JavaScript</button>
+    </div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>curl -X POST {{BASE}}/api/chat \
+  -H "Authorization: Bearer $EASYSAZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "سلام! خودت را در یک جمله معرفی کن"}'</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>import os
+import requests
+
+BASE_URL = "{{BASE}}"
+HEADERS = {"Authorization": f"Bearer {os.environ['EASYSAZ_API_KEY']}"}
+
+r = requests.post(f"{BASE_URL}/api/chat", headers=HEADERS, timeout=150,
+                  json={"prompt": "سلام! خودت را در یک جمله معرفی کن"})
+print(r.json()["text"] if r.ok else r.text)</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>// Node.js 18+ (fetch is built in)
+const r = await fetch("{{BASE}}/api/chat", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${process.env.EASYSAZ_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ prompt: "سلام! خودت را در یک جمله معرفی کن" }),
+});
+console.log(r.ok ? (await r.json()).text : await r.text());</code></pre></div></div>
+  </div>
+  <p><strong>۳.</strong> پاسخ موفق این شکلی است:</p>
+  <div class="code"><pre><code>{"text": "سلام! من یک دستیار هوش مصنوعی هستم ..."}</code></pre></div>
+</section>
+
+<!-- ───────────── playground ───────────── -->
+<section id="playground">
+  <h2>ارسال درخواست (آزمایشی)</h2>
+  <p>کلیدتان را وارد کنید، سؤال را بنویسید و «ارسال» را بزنید. درخواست مستقیم از مرورگر شما به همین سرویس فرستاده می‌شود و کلید جایی ذخیره نمی‌شود، مگر اینکه «به خاطر بسپار» را بزنید (فقط در همین مرورگر).</p>
+
+  <div class="pg">
+    <form class="card" id="pgForm" autocomplete="off">
+      <div class="field">
+        <label for="pgKey">کلید API</label>
+        <div class="row">
+          <input type="password" id="pgKey" class="ltr" placeholder="کلیدی که مدیر سرویس داده" spellcheck="false">
+          <button type="button" class="btn icon-btn" id="pgKeyShow" aria-label="نمایش کلید">👁</button>
+        </div>
+        <label class="check"><input type="checkbox" id="pgRemember"> کلید را در این مرورگر به خاطر بسپار</label>
+      </div>
+
+      <div class="field">
+        <span class="label">روش</span>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="mode" value="json" checked>یک‌جا (JSON)</label>
+          <label><input type="radio" name="mode" value="stream">استریم (SSE)</label>
+          <label><input type="radio" name="mode" value="ws">WebSocket</label>
+        </div>
+        <div class="hint" id="modeHint"></div>
+      </div>
+
+      <div class="field">
+        <label for="pgPrompt">متن سؤال (<code>prompt</code>)</label>
+        <textarea id="pgPrompt" dir="auto" placeholder="مثلاً: سه ایده برای اسم یک کافه بده"></textarea>
+        <div class="hint"><span id="pgCount">0</span> / <span id="pgMax">8000</span> کاراکتر</div>
+      </div>
+
+      <div class="field">
+        <span class="label">تصویر (اختیاری)</span>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="img" value="none" checked>بدون تصویر</label>
+          <label><input type="radio" name="img" value="url">لینک تصویر</label>
+          <label><input type="radio" name="img" value="file">فایل</label>
+        </div>
+        <input type="url" id="pgImgUrl" class="ltr hidden" placeholder="https://example.com/photo.jpg" style="margin-top:8px">
+        <div id="pgImgFileBox" class="hidden" style="margin-top:8px">
+          <input type="file" id="pgImgFile" accept="image/*">
+          <img id="pgPreview" class="preview hidden" alt="پیش‌نمایش تصویر">
+        </div>
+      </div>
+
+      <div class="row">
+        <button type="submit" class="btn primary" id="pgSend">ارسال</button>
+        <button type="button" class="btn" id="pgStop" disabled>توقف</button>
+        <button type="button" class="btn hidden" id="pgReset" title="شروع مکالمهٔ تازه روی همان اتصال">مکالمهٔ جدید</button>
+        <button type="button" class="btn" id="pgCurl">کپی دستور curl</button>
+      </div>
+    </form>
+
+    <div class="card">
+      <div class="resp-head">
+        <strong>پاسخ</strong>
+        <span class="pill hidden" id="pgStatus" dir="ltr"></span>
+        <span class="pill hidden" id="pgTime" dir="ltr"></span>
+        <span class="spacer"></span>
+        <button class="btn hidden" id="pgCopyOut" style="padding:2px 10px;font-size:.8rem">کپی متن</button>
+      </div>
+      <div class="output" id="pgOut" dir="auto"><span class="ph">پاسخ اینجا نمایش داده می‌شود.</span></div>
+      <details id="pgRawBox">
+        <summary>پاسخ خام سرور</summary>
+        <pre><code id="pgRaw"></code></pre>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── auth ───────────── -->
+<section id="auth">
+  <h2>کلید API و احراز هویت</h2>
+  <p>کلید را مدیر سرویس به شما می‌دهد؛ ثبت‌نام خودکار وجود ندارد. کلید یک رشتهٔ تصادفی حدود ۴۳ کاراکتری است و مثل رمز عبور باید محرمانه بماند. بهتر است برای هر برنامه یا هر نفر کلید جدا بگیرید تا اگر یکی لو رفت، فقط همان عوض شود.</p>
+  <p>کلید را در هر درخواست به یکی از این سه روش بفرستید:</p>
+  <table>
+    <thead><tr><th>روش</th><th>نمونه</th><th>توضیح</th></tr></thead>
+    <tbody>
+      <tr><td>هدر Authorization</td><td><code>Authorization: Bearer KEY</code></td><td>روش پیشنهادی</td></tr>
+      <tr><td>هدر X-API-Key</td><td><code>X-API-Key: KEY</code></td><td>برای ابزارهایی که Bearer ندارند</td></tr>
+      <tr><td>پارامتر آدرس</td><td><code>?api_key=KEY</code></td><td>فقط برای WebSocket مرورگر که نمی‌تواند هدر بفرستد؛ کلید در لاگ‌ها ثبت می‌شود</td></tr>
+    </tbody>
+  </table>
+  <p>کلید را در متغیر محیطی نگه دارید، نه داخل کد:</p>
+  <div class="code"><pre><code>export EASYSAZ_API_KEY="your-key"        # Linux / macOS
+$env:EASYSAZ_API_KEY="your-key"         # Windows PowerShell</code></pre></div>
+  <div class="callout warn">کلید را در جاوااسکریپتِ سمت کاربرِ سایت خودتان نگذارید؛ هر بازدیدکننده می‌تواند آن را ببیند. درخواست را از سرور خودتان بفرستید. همیشه از آدرس <code>https</code> استفاده کنید.</div>
+</section>
+
+<!-- ───────────── /api/chat ───────────── -->
+<section id="chat">
+  <h2>پاسخ یک‌جا</h2>
+  <div class="endpoint"><span class="method m-post">POST</span><span class="path">/api/chat</span><span class="badge">نیاز به کلید</span></div>
+  <p>سؤال را می‌فرستید و وقتی جواب کامل شد، یک‌جا تحویل می‌گیرید. ساده‌ترین روش است.</p>
+  <h3>بدنهٔ درخواست (JSON)</h3>
+  <table>
+    <thead><tr><th>فیلد</th><th>نوع</th><th>توضیح</th></tr></thead>
+    <tbody>
+      <tr><td><code>prompt</code></td><td>string</td><td>متن سؤال. اجباری، مگر اینکه تصویر بفرستید. حداکثر <span class="lim-prompt">۸۰۰۰</span> کاراکتر.</td></tr>
+      <tr><td><code>image_url</code></td><td>string</td><td>اختیاری. لینک عمومی تصویر (<a href="#images">ارسال تصویر</a>).</td></tr>
+      <tr><td><code>image_base64</code></td><td>string</td><td>اختیاری. خود تصویر به‌صورت base64 یا <code>data:image/...;base64,...</code></td></tr>
+    </tbody>
+  </table>
+  <h3>پاسخ</h3>
+  <div class="code"><pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{"text": "متن کامل جواب"}</code></pre></div>
+  <h3>نمونه کد</h3>
+  <div class="tabs" data-tabs>
+    <div class="tablist" role="tablist"><button role="tab">Python</button><button role="tab">curl</button><button role="tab">JavaScript</button><button role="tab">PHP</button></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>import os
+import requests
+
+BASE_URL = "{{BASE}}"
+HEADERS = {"Authorization": f"Bearer {os.environ['EASYSAZ_API_KEY']}"}
+
+def ask(prompt):
+    r = requests.post(f"{BASE_URL}/api/chat", headers=HEADERS,
+                      json={"prompt": prompt}, timeout=150)
+    if r.status_code != 200:
+        raise RuntimeError(f"{r.status_code}: {r.text[:200]}")
+    return r.json()["text"]
+
+print(ask("Say hello in one sentence"))</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>curl -X POST {{BASE}}/api/chat \
+  -H "Authorization: Bearer $EASYSAZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Say hello in one sentence"}'</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>async function ask(prompt) {
+  const r = await fetch("{{BASE}}/api/chat", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.EASYSAZ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  return (await r.json()).text;
+}
+
+console.log(await ask("Say hello in one sentence"));</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>&lt;?php
+$ch = curl_init("{{BASE}}/api/chat");
+curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT => 150,
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer " . getenv("EASYSAZ_API_KEY"),
+        "Content-Type: application/json",
+    ],
+    CURLOPT_POSTFIELDS => json_encode(["prompt" => "Say hello in one sentence"]),
+]);
+$body = curl_exec($ch);
+$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+echo $code === 200 ? json_decode($body, true)["text"] : "$code: $body";</code></pre></div></div>
+  </div>
+  <p class="hint">بعضی جواب‌ها چند ده ثانیه طول می‌کشند؛ timeout برنامه‌تان را دست‌کم ۱۵۰ ثانیه بگذارید.</p>
+</section>
+
+<!-- ───────────── /api/chat/stream ───────────── -->
+<section id="stream">
+  <h2>پاسخ استریم (SSE)</h2>
+  <div class="endpoint"><span class="method m-post">POST</span><span class="path">/api/chat/stream</span><span class="badge">نیاز به کلید</span></div>
+  <p>ورودی دقیقاً مثل <code>/api/chat</code> است، اما جواب هم‌زمان با تولید شدن و به‌صورت <a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events" target="_blank" rel="noopener">Server-Sent Events</a> می‌رسد. هر رویداد یک خط <code>data:</code> با یک JSON است و رویدادها با یک خط خالی جدا می‌شوند.</p>
+  <div class="code"><pre><code>HTTP/1.1 200 OK
+Content-Type: text/event-stream
+
+data: {"type": "delta", "text": "سل"}
+
+data: {"type": "delta", "text": "ام!"}
+
+data: {"type": "done"}</code></pre></div>
+  <table>
+    <thead><tr><th>type</th><th>معنی</th></tr></thead>
+    <tbody>
+      <tr><td><code>delta</code></td><td>یک تکه از متن در فیلد <code>text</code>؛ تکه‌ها را به ترتیب به هم بچسبانید.</td></tr>
+      <tr><td><code>done</code></td><td>جواب کامل شد.</td></tr>
+      <tr><td><code>error</code></td><td>خطا در میانهٔ کار؛ متن خطا در <code>message</code> است و جواب ناقص مانده.</td></tr>
+    </tbody>
+  </table>
+  <p>خطاهایی که پیش از شروع جریان رخ می‌دهند (کلید، ورودی نادرست) با همان کدهای وضعیت معمولی و بدنهٔ JSON برمی‌گردند (<a href="#errors">خطاها</a>).</p>
+  <div class="tabs" data-tabs>
+    <div class="tablist" role="tablist"><button role="tab">Python</button><button role="tab">curl</button><button role="tab">JavaScript</button></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>import json
+import os
+import requests
+
+BASE_URL = "{{BASE}}"
+HEADERS = {"Authorization": f"Bearer {os.environ['EASYSAZ_API_KEY']}"}
+
+def ask_stream(prompt):
+    with requests.post(f"{BASE_URL}/api/chat/stream", headers=HEADERS,
+                       json={"prompt": prompt}, stream=True, timeout=150) as r:
+        if r.status_code != 200:
+            raise RuntimeError(f"{r.status_code}: {r.text[:200]}")
+        r.encoding = "utf-8"          # without this, Persian text gets garbled
+        for line in r.iter_lines(decode_unicode=True):
+            if not line.startswith("data:"):
+                continue
+            event = json.loads(line[5:])
+            if event["type"] == "delta":
+                yield event["text"]
+            elif event["type"] == "error":
+                raise RuntimeError(event["message"])
+            elif event["type"] == "done":
+                return
+
+for piece in ask_stream("Count from 1 to 5"):
+    print(piece, end="", flush=True)
+print()</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>curl -N -X POST {{BASE}}/api/chat/stream \
+  -H "Authorization: Bearer $EASYSAZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Count from 1 to 5"}'</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>// EventSource can't send POST or headers, so read the stream with fetch.
+async function askStream(prompt, onText) {
+  const r = await fetch("{{BASE}}/api/chat/stream", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.EASYSAZ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    buf += decoder.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf("\n\n")) >= 0) {
+      const block = buf.slice(0, i);
+      buf = buf.slice(i + 2);
+      for (const line of block.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const ev = JSON.parse(line.slice(5));
+        if (ev.type === "delta") onText(ev.text);
+        else if (ev.type === "error") throw new Error(ev.message);
+        else if (ev.type === "done") return;
+      }
+    }
+  }
+}
+
+await askStream("Count from 1 to 5", (t) => process.stdout.write(t));</code></pre></div></div>
+  </div>
+  <p class="hint">اگر پراکسی یا هاست میان‌راه پاسخ را بافر کند، تکه‌ها یک‌جا می‌رسند. متن نهایی همان است و فقط زمان نمایش فرق می‌کند.</p>
+</section>
+
+<!-- ───────────── /ws ───────────── -->
+<section id="ws">
+  <h2>WebSocket</h2>
+  <div class="endpoint"><span class="method m-ws">WS</span><span class="path">/ws</span><span class="badge">نیاز به کلید</span><span class="badge" id="wsAvail">فقط روی سرور ASGI</span></div>
+  <p>یک اتصال دائمی که در آن هر اتصال یک مکالمهٔ چندمرحله‌ای است: سرویس پیام‌های قبلی همان اتصال را به خاطر دارد. روی هاست اشتراکی (cPanel / Passenger) در دسترس نیست؛ آنجا از <a href="#stream">استریم SSE</a> استفاده کنید. درخواست HTTP معمولی به <code>/ws</code> کد ۴۲۶ و پیام راهنما برمی‌گرداند.</p>
+  <table>
+    <thead><tr><th>جهت</th><th>پیام</th><th>توضیح</th></tr></thead>
+    <tbody>
+      <tr><td>کلاینت ← سرور</td><td><code>{"type":"chat","id":"1","prompt":"..."}</code></td><td>سؤال؛ <code>image_url</code> یا <code>image_base64</code> هم پذیرفته می‌شود. <code>id</code> دلخواه است و در پاسخ‌ها برمی‌گردد.</td></tr>
+      <tr><td>کلاینت ← سرور</td><td><code>{"type":"reset"}</code></td><td>شروع مکالمهٔ تازه روی همان اتصال</td></tr>
+      <tr><td>کلاینت ← سرور</td><td><code>{"type":"ping"}</code></td><td>بررسی زنده بودن اتصال</td></tr>
+      <tr><td>سرور ← کلاینت</td><td><code>{"type":"ready","mode":"smart"}</code></td><td>اتصال آماده است (اولین پیام)</td></tr>
+      <tr><td>سرور ← کلاینت</td><td><code>{"type":"delta","id":"1","text":"..."}</code></td><td>تکه‌ای از جواب (تکرار می‌شود)</td></tr>
+      <tr><td>سرور ← کلاینت</td><td><code>{"type":"done","id":"1","text":"..."}</code></td><td>جواب کامل</td></tr>
+      <tr><td>سرور ← کلاینت</td><td><code>{"type":"error","id":"1","message":"..."}</code></td><td>خطا؛ اتصال باز می‌ماند</td></tr>
+      <tr><td>سرور ← کلاینت</td><td><code>{"type":"reset"}</code> / <code>{"type":"pong"}</code></td><td>تأیید reset و ping</td></tr>
+    </tbody>
+  </table>
+  <p>با کلید نادرست، اتصال با کد <code>1008</code> بسته می‌شود.</p>
+  <div class="tabs" data-tabs>
+    <div class="tablist" role="tablist"><button role="tab">JavaScript</button><button role="tab">Python</button></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>const ws = new WebSocket("{{WSBASE}}/ws?api_key=" + encodeURIComponent(KEY));
+ws.onmessage = (e) => {
+  const m = JSON.parse(e.data);
+  if (m.type === "ready") ws.send(JSON.stringify({ type: "chat", id: "1", prompt: "سلام" }));
+  else if (m.type === "delta") console.log(m.text);
+  else if (m.type === "done") console.log("full reply:", m.text);
+  else if (m.type === "error") console.error(m.message);
+};</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code># pip install websockets
+import asyncio, json, os
+import websockets
+
+async def main():
+    headers = {"Authorization": f"Bearer {os.environ['EASYSAZ_API_KEY']}"}
+    async with websockets.connect("{{WSBASE}}/ws", additional_headers=headers) as ws:
+        await ws.recv()                                   # {"type": "ready"}
+        for question in ["My name is Sara.", "What is my name?"]:
+            await ws.send(json.dumps({"type": "chat", "prompt": question}))
+            while True:
+                m = json.loads(await ws.recv())
+                if m["type"] == "delta":
+                    print(m["text"], end="", flush=True)
+                elif m["type"] in ("done", "error"):
+                    print(); break
+
+asyncio.run(main())</code></pre></div></div>
+  </div>
+</section>
+
+<!-- ───────────── other ───────────── -->
+<section id="other">
+  <h2>مسیرهای عمومی</h2>
+  <p>این مسیرها کلید نمی‌خواهند.</p>
+  <table>
+    <thead><tr><th>مسیر</th><th>پاسخ</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /health</code></td><td><code>{"status": "ok"}</code>؛ برای مانیتورینگ.</td></tr>
+      <tr><td><code>GET /</code></td><td>اطلاعات سرویس، مسیرها و محدودیت‌ها به‌صورت JSON. مرورگر به این صفحه هدایت می‌شود.</td></tr>
+      <tr><td><code>GET /doc</code></td><td>همین راهنما.</td></tr>
+      <tr><td><code>GET /openapi.json</code></td><td>مشخصات OpenAPI 3.1؛ در Postman، Insomnia یا Swagger Editor ایمپورت کنید.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ───────────── images ───────────── -->
+<section id="images">
+  <h2>ارسال تصویر</h2>
+  <p>تصویر را یا با لینک (<code>image_url</code>) یا با خود فایل در قالب base64 (<code>image_base64</code>) بفرستید. <code>prompt</code> اختیاری است؛ اگر نگذارید، سرویس می‌پرسد «این تصویر چیست؟ دقیق توضیح بده». هر دو روش روی هر سه مسیر کار می‌کند.</p>
+  <table>
+    <thead><tr><th>فیلد</th><th>مقدار</th><th>محدودیت</th></tr></thead>
+    <tbody>
+      <tr><td><code>image_url</code></td><td>لینک مستقیم تصویر با http یا https</td><td>فقط آدرس عمومی که بدون لاگین باز شود؛ آدرس‌های داخلی شبکه رد می‌شوند؛ حداکثر ۳ ریدایرکت</td></tr>
+      <tr><td><code>image_base64</code></td><td>base64 خالص یا <code>data:image/...;base64,...</code></td><td>رشتهٔ معتبر base64</td></tr>
+      <tr><td>اندازه</td><td>هر دو حالت</td><td>حداکثر <span class="lim-image">۱۰ مگابایت</span></td></tr>
+    </tbody>
+  </table>
+  <div class="tabs" data-tabs>
+    <div class="tablist" role="tablist"><button role="tab">Python (فایل)</button><button role="tab">Python (لینک)</button><button role="tab">curl (فایل)</button></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>import base64, os, requests
+
+BASE_URL = "{{BASE}}"
+HEADERS = {"Authorization": f"Bearer {os.environ['EASYSAZ_API_KEY']}"}
+
+with open("photo.jpg", "rb") as f:
+    img = base64.b64encode(f.read()).decode()
+
+r = requests.post(f"{BASE_URL}/api/chat", headers=HEADERS, timeout=150, json={
+    "image_base64": img,
+    "prompt": "What is in this image?",
+})
+print(r.json()["text"] if r.ok else r.text)</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code>r = requests.post(f"{BASE_URL}/api/chat", headers=HEADERS, timeout=150, json={
+    "image_url": "https://example.com/photo.jpg",
+    "prompt": "What is in this image?",
+})
+print(r.json()["text"] if r.ok else r.text)</code></pre></div></div>
+    <div class="tabpanel" role="tabpanel"><div class="code"><pre><code># Linux (on macOS use: base64 -i photo.jpg)
+printf '{"prompt":"What is in this image?","image_base64":"%s"}' "$(base64 -w0 photo.jpg)" |
+curl -X POST {{BASE}}/api/chat \
+  -H "Authorization: Bearer $EASYSAZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  --data-binary @-</code></pre></div></div>
+  </div>
+</section>
+
+<!-- ───────────── history ───────────── -->
+<section id="history">
+  <h2>مکالمهٔ چندمرحله‌ای</h2>
+  <p>در <code>/api/chat</code> و <code>/api/chat/stream</code> هر درخواست یک مکالمهٔ تازه است و سرویس سؤال‌های قبلی را نمی‌داند. اگر سؤال بعدی به قبلی وابسته است، متن قبلی را خودتان در <code>prompt</code> بگنجانید (یا از <a href="#ws">WebSocket</a> استفاده کنید):</p>
+  <div class="code"><pre><code>history = []
+
+def chat(user_text):
+    history.append(f"User: {user_text}")
+    prompt = "\n".join(history) + "\nAssistant:"
+    answer = ask(prompt)                      # ask() from the /api/chat example
+    history.append(f"Assistant: {answer}")
+    return answer
+
+chat("My name is Sara.")
+print(chat("What is my name?"))</code></pre></div>
+  <p>وقتی تاریخچه طولانی شود به سقف <span class="lim-prompt">۸۰۰۰</span> کاراکتر می‌رسد؛ قدیمی‌ترین پیام‌ها را از <code>history</code> حذف کنید.</p>
+</section>
+
+<!-- ───────────── errors ───────────── -->
+<section id="errors">
+  <h2>خطاها و کدهای وضعیت</h2>
+  <p>پاسخ موفق همیشه کد ۲۰۰ است. هر خطای دیگر بدنه‌ای به شکل <code>{"error": "..."}</code> دارد.</p>
+  <table>
+    <thead><tr><th>کد</th><th>معنی</th><th>چه کنید</th></tr></thead>
+    <tbody>
+      <tr><td>400</td><td>ورودی نادرست: <code>prompt</code> خالی یا خیلی بلند، JSON خراب، تصویر بزرگ، لینک تصویر نامعتبر یا داخلی</td><td>متن <code>error</code> می‌گوید کجا اشکال دارد؛ ورودی را اصلاح کنید</td></tr>
+      <tr><td>401</td><td>کلید نفرستاده‌اید یا نادرست است</td><td>کلید را با مدیر سرویس چک کنید</td></tr>
+      <tr><td>404</td><td>مسیر اشتباه است</td><td>آدرس پایه و مسیر را چک کنید</td></tr>
+      <tr><td>405</td><td>متد اشتباه (مثلاً GET به جای POST)</td><td>مسیرهای چت فقط POST می‌پذیرند</td></tr>
+      <tr><td>426</td><td>درخواست HTTP معمولی به <code>/ws</code></td><td>با کلاینت WebSocket وصل شوید یا از SSE استفاده کنید</td></tr>
+      <tr><td>502</td><td>ارتباط با موتور هوش مصنوعی ناموفق بود (<code>upstream request failed</code>)</td><td>چند ثانیه بعد دوباره بفرستید</td></tr>
+      <tr><td>503</td><td>سرویس هنوز کلیدی تنظیم نکرده است</td><td>به مدیر سرویس خبر دهید</td></tr>
+      <tr><td>504 / 524</td><td>پراکسی میان‌راه پیش از پایان جواب اتصال را قطع کرد</td><td>سؤال را کوتاه‌تر کنید یا از استریم استفاده کنید</td></tr>
+    </tbody>
+  </table>
+  <p>فقط خطای ۵۰۲ با تکرار درست می‌شود:</p>
+  <div class="code"><pre><code>import time
+
+def ask_with_retry(prompt, tries=3):
+    for i in range(tries):
+        try:
+            return ask(prompt)
+        except RuntimeError as e:
+            if not str(e).startswith("502") or i == tries - 1:
+                raise
+            time.sleep(2 * (i + 1))</code></pre></div>
+</section>
+
+<!-- ───────────── limits ───────────── -->
+<section id="limits">
+  <h2>محدودیت‌ها و نکات</h2>
+  <table>
+    <thead><tr><th>مورد</th><th>مقدار</th></tr></thead>
+    <tbody>
+      <tr><td>طول <code>prompt</code></td><td>حداکثر <span class="lim-prompt">۸۰۰۰</span> کاراکتر</td></tr>
+      <tr><td>اندازهٔ تصویر</td><td>حداکثر <span class="lim-image">۱۰ مگابایت</span></td></tr>
+      <tr><td>درخواست هم‌زمان</td><td><span class="lim-conc">۳</span> درخواست برای کل سرویس؛ بقیه در صف می‌مانند و در شلوغی جواب دیرتر می‌رسد</td></tr>
+      <tr><td>زمان پاسخ</td><td>معمولاً چند ثانیه، گاهی تا چند ده ثانیه؛ timeout را ۱۵۰ ثانیه بگذارید</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>اگر کلیدتان جایی دیده شد (گیت، عکس صفحه، پیام)، فوراً از مدیر سرویس کلید جدید بخواهید.</li>
+    <li>جواب‌های فارسی UTF-8 هستند؛ در استریم پایتون <code>r.encoding = "utf-8"</code> را فراموش نکنید.</li>
+    <li>از ترمینال می‌توانید از اسکریپت <code>ask.sh</code> داخل مخزن استفاده کنید: <code>./ask.sh "سؤال"</code>.</li>
+  </ul>
+</section>
+
+<!-- ───────────── admin ───────────── -->
+<section id="admin">
+  <h2>برای مدیر سرویس: صدور کلید</h2>
+  <p>کلیدها در متغیر <code>API_KEY</code> سرور نگه داشته می‌شوند و چند کلید با کاما جدا می‌شوند. به هر کاربر یا برنامه یک کلید جدا بدهید.</p>
+  <ol>
+    <li>کلید بسازید: <code>python -c "import secrets; print(secrets.token_urlsafe(32))"</code></li>
+    <li>در فایل <code>.env</code> کنار برنامه، کلید را با کاما به خط <code>API_KEY</code> اضافه کنید: <code>API_KEY=old-key,new-user-key</code></li>
+    <li>برنامه را Restart کنید (در Setup Python App دکمهٔ Restart، یا <code>touch tmp/restart.txt</code>).</li>
+    <li>برای لغو دسترسی، کلید را از همان خط حذف و دوباره Restart کنید.</li>
+  </ol>
+  <p class="hint">اگر <code>API_KEY</code> را در Environment variables صفحهٔ Setup Python App هم گذاشته‌اید، آن مقدار اولویت دارد و تغییر <code>.env</code> اثری ندارد.</p>
+</section>
+
+<footer>ai EasySaz API · <a href="openapi.json">openapi.json</a> · <a href="health">health</a></footer>
+</main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+  var faDigits = function (n) { return String(n).replace(/\d/g, function (d) { return "۰۱۲۳۴۵۶۷۸۹"[d]; }); };
+
+  // Base URL of the service: the directory this page is served from, so the docs also
+  // work when the app is mounted under a sub-path (e.g. https://host/api-app/doc).
+  var BASE = new URL(".", location.href).href.replace(/\/$/, "");
+  var WSBASE = BASE.replace(/^http/, "ws");
+  $("baseUrl").textContent = BASE;
+  document.querySelectorAll("pre code").forEach(function (el) {
+    el.textContent = el.textContent.split("{{BASE}}").join(BASE).split("{{WSBASE}}").join(WSBASE);
+  });
+
+  // ── theme ──
+  var root = document.documentElement;
+  var savedTheme = store.get("theme");
+  if (savedTheme) root.setAttribute("data-theme", savedTheme);
+  $("themeBtn").addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") === "dark" ||
+      (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+    var next = dark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    store.set("theme", next);
+  });
+
+  // ── mobile menu & active link ──
+  var side = $("side");
+  $("menuBtn").addEventListener("click", function () {
+    var open = side.classList.toggle("open");
+    this.setAttribute("aria-expanded", String(open));
+  });
+  side.addEventListener("click", function (e) {
+    if (e.target.tagName === "A") { side.classList.remove("open"); $("menuBtn").setAttribute("aria-expanded", "false"); }
+  });
+  var links = Array.prototype.slice.call(side.querySelectorAll("a"));
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        links.forEach(function (a) { a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id); });
+      });
+    }, { rootMargin: "-70px 0px -70% 0px" });
+    document.querySelectorAll("main section[id]").forEach(function (s) { io.observe(s); });
+  }
+
+  // ── tabs ──
+  document.querySelectorAll("[data-tabs]").forEach(function (box) {
+    var btns = box.querySelectorAll(".tablist button");
+    var panels = box.querySelectorAll(".tabpanel");
+    var select = function (i) {
+      btns.forEach(function (b, j) { b.setAttribute("aria-selected", String(i === j)); });
+      panels.forEach(function (p, j) { p.hidden = i !== j; });
+    };
+    btns.forEach(function (b, i) { b.type = "button"; b.addEventListener("click", function () { select(i); }); });
+    select(0);
+  });
+
+  // ── copy buttons ──
+  var copyText = function (text, btn) {
+    var done = function () { var t = btn.textContent; btn.textContent = "کپی شد ✓"; setTimeout(function () { btn.textContent = t; }, 1400); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  };
+  var fallbackCopy = function (text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  };
+  document.querySelectorAll(".code").forEach(function (box) {
+    var b = document.createElement("button");
+    b.className = "copy"; b.type = "button"; b.textContent = "کپی";
+    b.addEventListener("click", function () { copyText(box.querySelector("pre").textContent, b); });
+    box.appendChild(b);
+  });
+  document.querySelectorAll("[data-copy-target]").forEach(function (b) {
+    b.addEventListener("click", function () { copyText($(b.getAttribute("data-copy-target")).textContent, b); });
+  });
+
+  // ── service status & limits ──
+  var limits = { max_prompt_chars: 8000, max_image_bytes: 10 * 1024 * 1024, max_concurrency: 3 };
+  fetch(BASE + "/health", { cache: "no-store" }).then(function (r) {
+    $("statusDot").className = "dot " + (r.ok ? "ok" : "err");
+    $("statusTxt").textContent = r.ok ? "سرویس فعال است" : "سرویس پاسخ نمی‌دهد";
+  }).catch(function () {
+    $("statusDot").className = "dot err";
+    $("statusTxt").textContent = "سرویس در دسترس نیست";
+  });
+  fetch(BASE + "/", { headers: { Accept: "application/json" }, cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (info) {
+      if (!info || !info.limits) return;
+      limits = info.limits;
+      $("pgMax").textContent = limits.max_prompt_chars;
+      document.querySelectorAll(".lim-prompt").forEach(function (e) { e.textContent = faDigits(limits.max_prompt_chars); });
+      document.querySelectorAll(".lim-conc").forEach(function (e) { e.textContent = faDigits(limits.max_concurrency); });
+      var mb = Math.round(limits.max_image_bytes / 1048576 * 10) / 10;
+      document.querySelectorAll(".lim-image").forEach(function (e) { e.textContent = faDigits(mb) + " مگابایت"; });
+      if (info.websocket === false) {
+        $("wsAvail").textContent = "روی این سرور غیرفعال";
+        modeHints.ws = "روی این سرور (هاست اشتراکی) WebSocket در دسترس نیست؛ برای پاسخ تکه‌تکه «استریم (SSE)» را انتخاب کنید.";
+        onMode();
+      }
+    }).catch(function () {});
+
+  // ── playground ──
+  var keyEl = $("pgKey"), promptEl = $("pgPrompt"), out = $("pgOut"), raw = $("pgRaw");
+  var savedKey = store.get("easysaz_api_key");
+  if (savedKey) { keyEl.value = savedKey; $("pgRemember").checked = true; }
+  var syncKey = function () {
+    if ($("pgRemember").checked && keyEl.value.trim()) store.set("easysaz_api_key", keyEl.value.trim());
+    else store.del("easysaz_api_key");
+  };
+  $("pgRemember").addEventListener("change", syncKey);
+  keyEl.addEventListener("change", syncKey);
+  $("pgKeyShow").addEventListener("click", function () { keyEl.type = keyEl.type === "password" ? "text" : "password"; });
+  promptEl.addEventListener("input", function () { $("pgCount").textContent = promptEl.value.length; });
+
+  var mode = function () { return document.querySelector("input[name=mode]:checked").value; };
+  var imgMode = function () { return document.querySelector("input[name=img]:checked").value; };
+  var modeHints = {
+    json: "POST /api/chat — کل جواب یک‌جا می‌رسد.",
+    stream: "POST /api/chat/stream — جواب تکه‌تکه نمایش داده می‌شود.",
+    ws: "/ws — اتصال باز می‌ماند و سرویس پیام‌های قبلی را به خاطر دارد. روی هاست اشتراکی کار نمی‌کند."
+  };
+  var onMode = function () {
+    $("modeHint").textContent = modeHints[mode()];
+    $("pgReset").classList.toggle("hidden", mode() !== "ws");
+    if (mode() !== "ws") closeWs();
+  };
+  document.querySelectorAll("input[name=mode]").forEach(function (r) { r.addEventListener("change", onMode); });
+  document.querySelectorAll("input[name=img]").forEach(function (r) {
+    r.addEventListener("change", function () {
+      $("pgImgUrl").classList.toggle("hidden", imgMode() !== "url");
+      $("pgImgFileBox").classList.toggle("hidden", imgMode() !== "file");
+    });
+  });
+
+  var imageData = null; // data: URL of the chosen file
+  $("pgImgFile").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    imageData = null;
+    $("pgPreview").classList.add("hidden");
+    if (!f) return;
+    if (f.size > limits.max_image_bytes) { showError("حجم تصویر از سقف مجاز بیشتر است."); this.value = ""; return; }
+    var rd = new FileReader();
+    rd.onload = function () { imageData = rd.result; $("pgPreview").src = imageData; $("pgPreview").classList.remove("hidden"); };
+    rd.readAsDataURL(f);
+  });
+
+  var buildBody = function () {
+    var body = {};
+    var p = promptEl.value.trim();
+    if (p) body.prompt = p;
+    if (imgMode() === "url" && $("pgImgUrl").value.trim()) body.image_url = $("pgImgUrl").value.trim();
+    if (imgMode() === "file" && imageData) body.image_base64 = imageData;
+    return body;
+  };
+
+  var started = 0, timer = null, ctrl = null, text = "", rawLog = [];
+  var setStatus = function (label, ok) {
+    var s = $("pgStatus");
+    s.textContent = label; s.className = "pill " + (ok === true ? "ok" : ok === false ? "err" : "");
+  };
+  var tick = function () { $("pgTime").textContent = ((Date.now() - started) / 1000).toFixed(1) + "s"; };
+  var begin = function () {
+    text = ""; rawLog = [];
+    out.className = "output"; out.textContent = "";
+    var ph = document.createElement("span"); ph.className = "ph"; ph.textContent = "در انتظار پاسخ…"; out.appendChild(ph);
+    raw.textContent = "";
+    setStatus("…"); $("pgStatus").classList.remove("hidden");
+    $("pgTime").classList.remove("hidden");
+    $("pgCopyOut").classList.add("hidden");
+    started = Date.now(); tick(); timer = setInterval(tick, 100);
+    $("pgSend").disabled = true; $("pgStop").disabled = false;
+  };
+  var finish = function () {
+    clearInterval(timer); timer = null; tick();
+    $("pgSend").disabled = false; $("pgStop").disabled = true;
+    ctrl = null;
+    if (text) $("pgCopyOut").classList.remove("hidden");
+  };
+  var append = function (t) {
+    if (!text) out.textContent = "";
+    text += t; out.textContent = text;
+    out.scrollTop = out.scrollHeight;
+  };
+  var logRaw = function (line) { rawLog.push(line); raw.textContent = rawLog.join("\n"); };
+  var showError = function (msg) {
+    out.className = "output err"; out.textContent = (text ? text + "\n\n" : "") + "⚠ " + msg;
+  };
+  var errorHelp = {
+    400: "ورودی نادرست است.", 401: "کلید API نادرست است یا وارد نشده.", 404: "مسیر پیدا نشد.",
+    426: "این مسیر اتصال WebSocket می‌خواهد.", 502: "ارتباط با موتور هوش مصنوعی ناموفق بود؛ چند ثانیه بعد دوباره امتحان کنید.",
+    503: "سرویس هنوز کلید API ندارد؛ به مدیر سرویس خبر دهید.", 504: "زمان پاسخ تمام شد؛ از حالت استریم استفاده کنید.",
+    524: "زمان پاسخ تمام شد؛ از حالت استریم استفاده کنید."
+  };
+  var httpError = function (status, bodyText) {
+    var msg = "";
+    try { msg = JSON.parse(bodyText).error || ""; } catch (e) {}
+    showError((errorHelp[status] || "خطای " + status) + (msg ? " (" + msg + ")" : ""));
+  };
+
+  var sendHttp = function (body, stream) {
+    ctrl = new AbortController();
+    var path = stream ? "/api/chat/stream" : "/api/chat";
+    return fetch(BASE + path, {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Authorization": "Bearer " + keyEl.value.trim(), "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      setStatus(r.status + " " + (r.statusText || ""), r.ok);
+      var ct = r.headers.get("content-type") || "";
+      if (!r.ok || !stream || ct.indexOf("text/event-stream") < 0) {
+        return r.text().then(function (t) {
+          logRaw(t);
+          if (!r.ok) return httpError(r.status, t);
+          try { append(JSON.parse(t).text || ""); } catch (e) { showError("پاسخ JSON نامعتبر است."); }
+        });
+      }
+      var reader = r.body.getReader(), dec = new TextDecoder(), buf = "";
+      var pump = function () {
+        return reader.read().then(function (res) {
+          if (res.done) return;
+          buf += dec.decode(res.value, { stream: true });
+          var i;
+          while ((i = buf.indexOf("\n\n")) >= 0) {
+            var block = buf.slice(0, i); buf = buf.slice(i + 2);
+            block.split("\n").forEach(function (line) {
+              if (line.indexOf("data:") !== 0) return;
+              logRaw(line);
+              var ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { return; }
+              if (ev.type === "delta") append(ev.text);
+              else if (ev.type === "error") { setStatus("200 · error", false); showError(ev.message); }
+            });
+          }
+          return pump();
+        });
+      };
+      return pump();
+    }).catch(function (e) {
+      if (e.name === "AbortError") { logRaw("// aborted"); if (!text) showError("درخواست متوقف شد."); return; }
+      setStatus("network", false);
+      showError("اتصال به سرویس برقرار نشد: " + e.message);
+    });
+  };
+
+  // WebSocket: one connection = one conversation, kept open between sends.
+  var ws = null, wsKey = null, wsPending = null, msgId = 0;
+  var closeWs = function () { if (ws) { try { ws.close(); } catch (e) {} } ws = null; };
+  var openWs = function () {
+    return new Promise(function (resolve, reject) {
+      var key = keyEl.value.trim();
+      if (ws && ws.readyState === 1 && wsKey === key) return resolve(ws);
+      closeWs();
+      var sock = new WebSocket(WSBASE + "/ws?api_key=" + encodeURIComponent(key));
+      var ready = false;
+      sock.onmessage = function (e) {
+        logRaw(e.data);
+        var m; try { m = JSON.parse(e.data); } catch (x) { return; }
+        if (m.type === "ready") { ready = true; ws = sock; wsKey = key; resolve(sock); return; }
+        if (m.type === "reset") { setStatus("reset", true); out.className = "output"; out.textContent = "مکالمهٔ جدید شروع شد."; return; }
+        if (!wsPending) return;
+        if (m.type === "delta") append(m.text);
+        else if (m.type === "done") { if (!text) append(m.text || ""); setStatus("done", true); wsPending(); }
+        else if (m.type === "error") { setStatus("error", false); showError(m.message); wsPending(); }
+      };
+      sock.onclose = function (e) {
+        if (ws === sock) ws = null;
+        if (!ready) reject(new Error(e.code === 1008 ? "کلید API نادرست است." :
+          "اتصال WebSocket برقرار نشد. روی هاست اشتراکی (Passenger) WebSocket در دسترس نیست؛ حالت استریم (SSE) را انتخاب کنید."));
+        else if (wsPending) { showError("اتصال قطع شد."); wsPending(); }
+      };
+    });
+  };
+  var sendWs = function (body) {
+    return openWs().then(function (sock) {
+      return new Promise(function (resolve) {
+        wsPending = function () { wsPending = null; resolve(); };
+        ctrl = { abort: function () { closeWs(); } };
+        body.type = "chat"; body.id = String(++msgId);
+        sock.send(JSON.stringify(body));
+        setStatus("connected", true);
+      });
+    }).catch(function (e) { setStatus("ws", false); showError(e.message); });
+  };
+  $("pgReset").addEventListener("click", function () {
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "reset" }));
+    else { out.className = "output"; out.textContent = "مکالمهٔ جدید با ارسال بعدی شروع می‌شود."; }
+  });
+
+  $("pgForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!keyEl.value.trim()) { keyEl.focus(); showError("ابتدا کلید API را وارد کنید."); return; }
+    var body = buildBody();
+    if (!body.prompt && !body.image_url && !body.image_base64) { promptEl.focus(); showError("متن سؤال یا تصویر را وارد کنید."); return; }
+    if (body.prompt && body.prompt.length > limits.max_prompt_chars) { showError("متن سؤال بیش از حد مجاز است."); return; }
+    syncKey();
+    begin();
+    var job = mode() === "ws" ? sendWs(body) : sendHttp(body, mode() === "stream");
+    job.then(finish, finish);
+  });
+  $("pgStop").addEventListener("click", function () { if (ctrl) ctrl.abort(); });
+  $("pgCopyOut").addEventListener("click", function () { copyText(text, this); });
+
+  var shellQuote = function (s) { return "'" + s.replace(/'/g, "'\\''") + "'"; };
+  $("pgCurl").addEventListener("click", function () {
+    var body = buildBody();
+    if (!body.prompt && !body.image_url && !body.image_base64) body.prompt = "سلام";
+    if (body.image_base64) body.image_base64 = "<BASE64_OF_YOUR_IMAGE>";
+    var stream = mode() === "stream";
+    var cmd = "curl " + (stream ? "-N " : "") + "-X POST " + BASE + (stream ? "/api/chat/stream" : "/api/chat") + " \\\n" +
+      "  -H \"Authorization: Bearer $EASYSAZ_API_KEY\" \\\n" +
+      "  -H \"Content-Type: application/json\" \\\n" +
+      "  -d " + shellQuote(JSON.stringify(body));
+    copyText(cmd, this);
+  });
+
+  onMode();
+})();
+</script>
+</body>
+</html>

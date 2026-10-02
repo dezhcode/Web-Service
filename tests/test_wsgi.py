@@ -51,3 +51,10 @@ def test_chat_and_stream(wsgi):
     s, h, body = call(wsgi, "POST", "/api/chat/stream", payload, auth)
     assert s.startswith("200") and h["content-type"].startswith("text/event-stream")
     assert body.count(b"data: ") == 3
+
+
+def test_doc_and_websocket_flag(wsgi):
+    s, h, body = call(wsgi, "GET", "/doc")
+    assert s.startswith("200") and h["content-type"].startswith("text/html")
+    s, _, body = call(wsgi, "GET", "/")
+    assert json.loads(body)["websocket"] is False

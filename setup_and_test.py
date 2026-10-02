@@ -8,10 +8,10 @@
 What it does
   1. checks Python, installs requirements.txt
   2. creates .env with a random API_KEY (an existing key is kept unless --rotate)
-  3. imports passenger_wsgi and runs offline tests in-process (health, auth, validation, SSRF guard)
+  3. imports passenger_wsgi and runs offline tests in-process (health, auth, validation, SSRF guard, docs page)
   4. checks that this host can reach Copilot and, if so, does a real chat + stream in-process
   5. touches tmp/restart.txt so Passenger reloads the app
-  6. tests the public URL over HTTP (health, auth, chat, SSE) and prints the API key
+  6. tests the public URL over HTTP (health, auth, docs page, chat, SSE) and prints the API key
 
 Output is plain ASCII on purpose: cPanel's terminal garbles mixed RTL/LTR text.
 Exit code is 1 if any check FAILed.
@@ -191,6 +191,10 @@ def step_local_tests(application, key):
     s, _, _ = wsgi_call(application, "GET", "/ws")
     check("GET /ws without WebSocket -> 426", s == 426, "got %s" % s)
 
+    s, _, b = wsgi_call(application, "GET", "/doc")
+    check("GET /doc -> docs page", s == 200 and b"playground" in b,
+          "got %s; is web/doc.html uploaded next to app.py?" % s)
+
 
 def run_with_timeout(fn, seconds):
     box = {}
@@ -330,6 +334,10 @@ def step_public(url, key, copilot_ok):
         record("FAIL", "auth is on", "server has no API_KEY: restart the app so .env is loaded")
         return
     check("request without key -> 401", s == 401, "got %s" % s)
+
+    s, _, b = http("GET", base + "/doc", timeout=20)
+    check("GET /doc -> docs page", s == 200 and b"playground" in b,
+          "got %s; is web/doc.html uploaded next to app.py?" % s)
 
     if not copilot_ok:
         record("SKIP", "public chat tests", "Copilot is not reachable from this host (see above)")

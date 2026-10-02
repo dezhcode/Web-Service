@@ -2,6 +2,8 @@
 #   WebSocket  /ws               - streaming, multi-turn per connection (needs an ASGI server)
 #   SSE        /api/chat/stream  - streaming over plain HTTP (works under Passenger/WSGI)
 #   JSON       /api/chat         - single request/response
+#   Docs       /doc              - user guide with an in-browser request playground
+#   OpenAPI    /openapi.json     - machine-readable API description
 #
 # ASGI:  uvicorn app:app
 # WSGI:  see passenger_wsgi.py (HTTP endpoints only, WebSocket is not possible there)
@@ -25,7 +27,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, StreamingResponse
+from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
@@ -57,6 +59,7 @@ def _env(name: str, default: str) -> str:
 
 DEFAULT_IMAGE_PROMPT = "این تصویر چیست؟ دقیق توضیح بده."
 MAX_REDIRECTS = 3
+DOC_PAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web", "doc.html")
 
 
 class BadRequest(Exception):
@@ -222,16 +225,139 @@ def _error_message(exc: Exception) -> str:
 
 # ───────────────────────────── HTTP endpoints ────────────────────────────────
 
-async def index(request: Request) -> JSONResponse:
+def _limits() -> dict:
+    return {
+        "max_prompt_chars": int(_env("MAX_PROMPT_CHARS", "8000")),
+        "max_image_bytes": int(_env("MAX_IMAGE_BYTES", str(10 * 1024 * 1024))),
+        "max_concurrency": int(_env("MAX_CONCURRENCY", "3")),
+    }
+
+
+def _websocket_enabled() -> bool:
+    # passenger_wsgi.py sets WEBSOCKET_ENABLED=0: Passenger cannot upgrade connections.
+    return _env("WEBSOCKET_ENABLED", "1") != "0"
+
+
+async def index(request: Request):
+    # Browsers opening the site root land on the docs; API clients get JSON.
+    if "text/html" in request.headers.get("accept", ""):
+        return RedirectResponse(request.scope.get("root_path", "") + "/doc", status_code=302)
     return JSONResponse({
         "service": "copilot-web-service",
         "mode": _env("COPILOT_MODE", "smart"),
+        "docs": "/doc",
+        "openapi": "/openapi.json",
+        "websocket": _websocket_enabled(),
+        "limits": _limits(),
         "endpoints": {
             "ws": "/ws (WebSocket, ASGI hosts only)",
             "sse": "POST /api/chat/stream",
             "json": "POST /api/chat",
         },
     })
+
+
+_doc_html: Optional[str] = None
+
+DOC_HEADERS = {
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+        "img-src 'self' data: blob:; connect-src 'self' ws: wss:; "
+        "base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    ),
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-cache",
+}
+
+
+async def doc(request: Request) -> HTMLResponse:
+    global _doc_html
+    if _doc_html is None:
+        with open(DOC_PAGE, encoding="utf-8") as f:
+            _doc_html = f.read()
+    return HTMLResponse(_doc_html, headers=DOC_HEADERS)
+
+
+_CHAT_BODY_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "prompt": {"type": "string", "description": "Question text. Required unless an image is sent."},
+        "image_url": {"type": "string", "format": "uri", "description": "Public http(s) image URL."},
+        "image_base64": {"type": "string", "description": "Image as base64 or a data: URL."},
+    },
+    "example": {"prompt": "Say hello in one sentence"},
+}
+_ERROR_SCHEMA = {"type": "object", "properties": {"error": {"type": "string"}}, "required": ["error"]}
+
+
+def _error(description: str) -> dict:
+    return {"description": description,
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+
+
+def openapi_spec(server_url: str) -> dict:
+    errors = {
+        "400": _error("Invalid input"),
+        "401": _error("Missing or wrong API key"),
+        "503": _error("API_KEY is not configured on the server"),
+    }
+    request_body = {"required": True, "content": {"application/json": {
+        "schema": {"$ref": "#/components/schemas/ChatRequest"}}}}
+    return {
+        "openapi": "3.1.0",
+        "info": {
+            "title": "ai EasySaz API",
+            "version": "1.0.0",
+            "description": "Send text or images to the AI and get the reply in one piece or streamed. "
+                           "Human-readable guide: /doc",
+        },
+        "servers": [{"url": server_url}],
+        "security": [{"bearer": []}, {"apiKeyHeader": []}],
+        "paths": {
+            "/api/chat": {"post": {
+                "summary": "Ask and get the full reply as JSON",
+                "requestBody": request_body,
+                "responses": {
+                    "200": {"description": "Reply", "content": {"application/json": {"schema": {
+                        "type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}}}},
+                    **errors,
+                    "502": _error("Upstream AI request failed; retry later"),
+                },
+            }},
+            "/api/chat/stream": {"post": {
+                "summary": "Ask and stream the reply as Server-Sent Events",
+                "description": 'Each event is `data: {"type": "delta", "text": "..."}`, ending with '
+                               '`{"type": "done"}` or `{"type": "error", "message": "..."}`.',
+                "requestBody": request_body,
+                "responses": {
+                    "200": {"description": "Event stream", "content": {"text/event-stream": {
+                        "schema": {"type": "string"}}}},
+                    **errors,
+                },
+            }},
+            "/health": {"get": {
+                "summary": "Liveness check", "security": [],
+                "responses": {"200": {"description": "OK", "content": {"application/json": {
+                    "schema": {"type": "object", "properties": {"status": {"type": "string"}}}}}}},
+            }},
+        },
+        "components": {
+            "schemas": {"ChatRequest": _CHAT_BODY_SCHEMA, "Error": _ERROR_SCHEMA},
+            "securitySchemes": {
+                "bearer": {"type": "http", "scheme": "bearer"},
+                "apiKeyHeader": {"type": "apiKey", "in": "header", "name": "X-API-Key"},
+            },
+        },
+    }
+
+
+async def openapi(request: Request) -> JSONResponse:
+    server_url = str(request.base_url).rstrip("/")
+    proto = request.headers.get("x-forwarded-proto")
+    if proto in ("http", "https"):  # behind a TLS-terminating proxy (cPanel, nginx)
+        server_url = proto + server_url[server_url.index(":"):]
+    return JSONResponse(openapi_spec(server_url))
 
 
 async def health(request: Request) -> JSONResponse:
@@ -386,6 +512,9 @@ def create_app() -> Starlette:
     return Starlette(
         routes=[
             Route("/", index),
+            Route("/doc", doc),
+            Route("/docs", doc),
+            Route("/openapi.json", openapi),
             Route("/health", health),
             Route("/api/chat", api_chat, methods=["POST"]),
             Route("/api/chat/stream", api_chat_stream, methods=["POST"]),

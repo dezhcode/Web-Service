@@ -168,3 +168,32 @@ def test_ws_requires_auth(client):
 def test_ws_path_over_plain_http_explains(client):
     r = client.get("/ws")
     assert r.status_code == 426
+
+
+def test_doc_page(client):
+    r = client.get("/doc")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
+    assert "/api/chat/stream" in r.text and 'id="playground"' in r.text
+    assert "frame-ancestors 'none'" in r.headers["content-security-policy"]
+    assert client.get("/docs").text == r.text
+
+
+def test_root_redirects_browsers_to_doc(client):
+    r = client.get("/", headers={"Accept": "text/html,application/xhtml+xml"}, follow_redirects=False)
+    assert r.status_code == 302 and r.headers["location"] == "/doc"
+    info = client.get("/", headers={"Accept": "application/json"}).json()
+    assert info["docs"] == "/doc" and info["limits"]["max_prompt_chars"] == 8000
+
+
+def test_root_reports_websocket_and_limits(client, monkeypatch):
+    monkeypatch.setenv("WEBSOCKET_ENABLED", "0")
+    monkeypatch.setenv("MAX_PROMPT_CHARS", "100")
+    info = client.get("/").json()
+    assert info["websocket"] is False and info["limits"]["max_prompt_chars"] == 100
+
+
+def test_openapi(client):
+    spec = client.get("/openapi.json", headers={"X-Forwarded-Proto": "https"}).json()
+    assert spec["openapi"].startswith("3.")
+    assert spec["servers"][0]["url"] == "https://testserver"
+    assert {"/api/chat", "/api/chat/stream", "/health"} <= set(spec["paths"])
