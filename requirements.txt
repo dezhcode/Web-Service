@@ -1,0 +1,6 @@
+starlette>=0.40
+a2wsgi>=1.10
+requests>=2.31
+websockets>=13
+# only needed to run the WebSocket endpoint on a VPS / ASGI host:
+# uvicorn>=0.30
