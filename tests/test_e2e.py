@@ -49,3 +49,27 @@ async def test_websocket_rejects_missing_key(server):
     with pytest.raises(websockets.exceptions.InvalidStatus):
         async with websockets.connect(f"ws://127.0.0.1:{server}/ws"):
             pass
+
+
+def test_setup_script_public_url_checks(server, capsys, monkeypatch):
+    import importlib
+    import setup_and_test as s
+    importlib.reload(s)
+    monkeypatch.setattr(s, "CHAT_TIMEOUT", 30)
+    s.step_public(f"http://127.0.0.1:{server}", "secret", True)
+    out = capsys.readouterr().out
+    assert "[FAIL]" not in out, out
+    assert "[OK  ] GET /health -> 200" in out
+    assert "[OK  ] request without key -> 401" in out
+    assert "[OK  ] POST /api/chat returns a reply" in out
+    assert "[OK  ] POST /api/chat/stream delivers deltas + done" in out
+    assert "plain http in use" in out  # warns about http
+
+
+def test_setup_script_public_url_wrong_key(server, capsys):
+    import importlib
+    import setup_and_test as s
+    importlib.reload(s)
+    s.step_public(f"http://127.0.0.1:{server}", "not-the-key", True)
+    out = capsys.readouterr().out
+    assert "[FAIL] POST /api/chat returns a reply" in out

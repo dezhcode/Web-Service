@@ -29,7 +29,7 @@ from starlette.responses import JSONResponse, StreamingResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from copilot_client import CopilotClient, CopilotSession
+from copilot_client import HTTP_BASE, WS_BASE, CopilotClient, CopilotSession
 
 log = logging.getLogger("copilot-service")
 
@@ -177,7 +177,11 @@ _limiter: Optional[asyncio.Semaphore] = None
 def get_client() -> CopilotClient:
     global _client
     if _client is None:
-        _client = CopilotClient(mode=_env("COPILOT_MODE", "smart"))
+        _client = CopilotClient(
+            mode=_env("COPILOT_MODE", "smart"),
+            http_base=_env("COPILOT_HTTP_BASE", HTTP_BASE),
+            ws_base=_env("COPILOT_WS_BASE", WS_BASE),
+        )
     return _client
 
 
