@@ -1,6 +1,6 @@
-# Copilot Web Service
+# ai EasySaz API
 
-وب‌سرویسی که کلاینت Copilot (حالت `smart`) را به‌صورت API ارائه می‌دهد:
+وب‌سرویس هوش مصنوعی ai EasySaz که از طریق API در دسترس است. راهنمای کامل استفادهٔ کاربران (پایتون): [docs/index.md](docs/index.md).
 
 | روش | مسیر | توضیح |
 |---|---|---|
@@ -13,7 +13,7 @@
 
 - **Starlette** (ASGI): هم WebSocket دارد و هم HTTP/SSE، بدون وابستگی سنگین (pydantic ندارد)، مناسب هاست اشتراکی.
 - **a2wsgi**: ASGI را به WSGI تبدیل می‌کند، چون **Passenger فقط WSGI می‌فهمد**.
-- **requests + websockets**: همان کتابخانه‌های اسکریپت اصلی (`copilot_client.py`).
+- **requests + websockets**: کتابخانه‌های ارتباط با موتور هوش مصنوعی.
 
 > ⚠️ **محدودیت مهم:** روی «Setup Python App» (Passenger) در cPanel، WebSocket واقعی ممکن نیست؛ Passenger برای پایتون فقط WSGI را اجرا می‌کند و آپگرید WebSocket را پشتیبانی نمی‌کند. بنابراین روی هاست اشتراکی از `POST /api/chat/stream` (SSE) برای استریم استفاده کنید. همان کد، روی VPS یا هر میزبان ASGI، `/ws` را هم سرو می‌کند.
 > اگر `/ws` را روی Passenger باز کنید خطا می‌گیرید؛ درخواست HTTP معمولی به `/ws` هم پیام راهنما با کد 426 برمی‌گرداند.
@@ -36,23 +36,22 @@
 python setup_and_test.py
 ```
 
-اسکریپت خودش: کتابخانه‌ها را نصب می‌کند، کلید `API_KEY` تصادفی می‌سازد و در `.env` می‌گذارد (کلید قبلی را نگه می‌دارد)، تست‌های بدون‌نیاز به Copilot را اجرا می‌کند، دسترسی هاست به Copilot و یک چت واقعی را تست می‌کند، Passenger را ری‌استارت می‌کند، آدرس عمومی را تست می‌کند (health، احراز هویت، چت، SSE) و در پایان کلید را چاپ می‌کند.
+اسکریپت خودش: کتابخانه‌ها را نصب می‌کند، کلید `API_KEY` تصادفی می‌سازد و در `.env` می‌گذارد (کلید قبلی را نگه می‌دارد)، تست‌های بدون‌نیاز به موتور هوش مصنوعی را اجرا می‌کند، دسترسی هاست به آن و یک چت واقعی را تست می‌کند، Passenger را ری‌استارت می‌کند، آدرس عمومی را تست می‌کند (health، احراز هویت، چت، SSE) و در پایان کلید را چاپ می‌کند.
 
 گزینه‌ها: `--url https://دامنه` (آدرس تست؛ پیش‌فرض داخل اسکریپت است) ، `--rotate` (کلید جدید) ، `--no-install` ، `--skip-live` ، `--no-url` ، `--no-restart`.
 خروجی عمداً انگلیسی/ASCII است چون ترمینال cPanel متن راست‌به‌چپ را درست نشان نمی‌دهد. اگر هر تستی `FAIL` شد، کد خروج ۱ است و پیام خطا راه‌حل را می‌گوید.
 
 ## استقرار روی cPanel (Setup Python App / Passenger)
 
-1. فایل‌ها را در یک پوشه روی هاست آپلود کنید (مثلاً `~/copilot-service`).
+1. فایل‌ها را در یک پوشه روی هاست آپلود کنید (مثلاً `~/easysaz-api`).
 2. cPanel → **Setup Python App** → Create Application:
    - Python version: ۳٫۹ یا بالاتر
-   - Application root: `copilot-service`
+   - Application root: `easysaz-api`
    - Application URL: دامنه/زیردامنهٔ دلخواه
    - Application startup file: `passenger_wsgi.py`
    - Application Entry point: `application`
 3. در همان صفحه **Environment variables** را اضافه کنید (یا فایل `.env` بسازید، نمونه: `.env.example`):
    - `API_KEY` = یک رشتهٔ تصادفی طولانی (**اجباری**؛ بدون آن سرویس 503 می‌دهد)
-   - `COPILOT_MODE` = `smart` (پیش‌فرض)
 4. در ترمینال/کادر «Configuration files» → `requirements.txt` را اضافه و **Run Pip Install** بزنید.
 5. **Restart** کنید (یا `touch tmp/restart.txt`).
 6. تست: `curl https://YOUR-DOMAIN/health`
@@ -100,8 +99,7 @@ ws.onopen = () => ws.send(JSON.stringify({ type: "chat", id: "1", prompt: "سل�
 | نام | پیش‌فرض | |
 |---|---|---|
 | `API_KEY` | — | اجباری |
-| `COPILOT_MODE` | `smart` | `chat` / `smart` / `reasoning` / `search` |
-| `MAX_CONCURRENCY` | `3` | حداکثر درخواست همزمان به Copilot (هاست اشتراکی منابع کمی دارد) |
+| `MAX_CONCURRENCY` | `3` | حداکثر درخواست همزمان به موتور هوش مصنوعی (هاست اشتراکی منابع کمی دارد) |
 | `MAX_PROMPT_CHARS` | `8000` | |
 | `MAX_IMAGE_BYTES` | `10485760` | |
 | `CORS_ORIGINS` | خالی | لیست origin ها با کاما، برای فراخوانی از مرورگر |
@@ -113,4 +111,4 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-تست‌ها با یک سرور Copilot شبیه‌سازی‌شده محلی اجرا می‌شوند (شامل مسیر کامل WebSocket روی uvicorn و فراخوانی WSGI برای Passenger).
+تست‌ها با یک سرور شبیه‌سازی‌شدهٔ محلی اجرا می‌شوند (شامل مسیر کامل WebSocket روی uvicorn و فراخوانی WSGI برای Passenger).
